@@ -24,4 +24,11 @@ export class UserController {
   findList(@Query(PaginationPipe) queryUserList: UserListDto) {
     return this.userService.findList(queryUserList);
   }
+  @Get(':id')
+  @ApiOperation({ summary: '根据id查询用户信息' })
+  @CommonApiResponse({ type: UserInfoVo })
+  findById(@Query('id') id: string) {
+    console.log(+id);
+    // return this.userService.findById(id);
+  }
 }
