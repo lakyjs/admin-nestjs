@@ -1,11 +1,13 @@
+import { ipToNumber } from '@/utils/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import Redis from 'ioredis';
 import { Logger } from 'nestjs-pino';
-import { BUSINESS_HTTP_CODE, IS_PUBLIC_KEY, JWT_SECRET } from '../constants';
+import { BUSINESS_HTTP_CODE, IS_PUBLIC_KEY, JWT_SECRET, USER_DEVICE_KEY, USER_VERSION_KEY } from '../constants';
 import { BusinessException } from '../exceptions/business.exceptions';
-import { RedisService } from '../redis/redis.service';
 
 /**
  * jwt全局校验守卫
@@ -18,16 +20,19 @@ import { RedisService } from '../redis/redis.service';
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  @InjectRedis()
+  private readonly redis: Redis;
+
   constructor(
     private reflector: Reflector,
     private readonly configService: ConfigService,
-    private readonly redisService: RedisService,
     private readonly logger: Logger
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext) {
     // 获取request对象
     const [req, res] = context.getArgs();
+    const deviceId = ipToNumber(req.ip);
 
     // 获取请求头中的 authorization 字段
     const token = context.switchToRpc().getData().headers.authorization?.replace('Bearer ', '');
@@ -59,9 +64,15 @@ export class JwtAuthGuard implements CanActivate {
           secret: this.configService.get(JWT_SECRET)
         });
 
-        // 用户数据版本号不一致则抛出异常
         const { version } = user;
-        const cacheVersion = await this.redisService.getUserVersion(user.id);
+        // 已在其他设备登录，提示重新登录
+        const cacheDeviceId = await this.redis.get(`${USER_DEVICE_KEY}:${user.id}`);
+        if (cacheDeviceId !== null && cacheDeviceId !== deviceId) {
+          throw BusinessException.throwLoginOtherDevice();
+        }
+
+        // 用户数据版本号不一致则抛出异常
+        const cacheVersion = await this.redis.get(`${USER_VERSION_KEY}:${user.id}`);
         if (Number(cacheVersion) !== version)
           BusinessException.throwInvalidToken();
 
@@ -72,6 +83,9 @@ export class JwtAuthGuard implements CanActivate {
       }
       catch (err) {
         this.logger.error(err);
+        if (err instanceof BusinessException) {
+          throw err;
+        }
         BusinessException.throwInvalidToken();
       }
     }

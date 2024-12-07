@@ -5,6 +5,7 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
 import { TransformFnParams } from 'class-transformer';
 import { isBoolean, isBooleanString, isEmpty, isNumber, isNumberString, ValidationArguments, ValidationOptions } from 'class-validator';
+import { Address4, Address6 } from 'ip-address';
 import { Path } from 'nestjs-i18n';
 import { handleTree } from './format';
 
@@ -105,6 +106,52 @@ export function vali(msg?: Path<I18nTranslations>, options: ValidationOptions = 
   return options;
 }
 
+/**
+ * 校验redis事务执行结果
+ * @param results redis事务执行结果
+ * @throws Error 如果事务执行失败，抛出此异常
+ */
+export function checkRedisTransactionStatus(results: [error: Error | null, result: unknown][] | null = []): void {
+  for (const [err, result] of results) {
+    if (err || result !== 'OK') {
+      throw new Error('Redis事务执行失败');
+    }
+  }
+}
+
+/**
+ * 转换IP地址为数字
+ * @param ip ip地址
+ * @returns IP转换后的数字
+ * @throws Error 如果IP地址无效，抛出此异常
+ */
+export function ipToNumber(ip: string): string {
+  const type = detectAddressType(ip);
+  if (type === 'unknown') {
+    throw new Error('Invalid IP address');
+  }
+  return type === 'ipv4' ? `${new Address4(ip).bigInt()}` : `${new Address6(ip).bigInt()}`;
+}
+
+function detectAddressType(address: string): 'ipv4' | 'ipv6' | 'unknown' {
+  if (isIPv6Address(address)) {
+    return 'ipv6';
+  }
+  else if (isIpv4Address(address)) {
+    return 'ipv4';
+  }
+  else {
+    return 'unknown';
+  }
+}
+
+function isIPv6Address(address: string): boolean {
+  return Address6.isValid(address);
+}
+
+function isIpv4Address(address: string): boolean {
+  return Address4.isValid(address);
+}
 // export function IsMobile(validationOptions?: ValidationOptions) {
 //   return function (object: object, propertyName: string) {
 //     registerDecorator({

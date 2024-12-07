@@ -19,6 +19,7 @@ export type I18nTranslations = {
             "password_cannot_be_empty": string;
             "user_not_exist": string;
             "username_or_password_incorrect": string;
+            "login_other_device": string;
         };
         "role": {
             "role_name_exist": string;

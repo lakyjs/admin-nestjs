@@ -58,13 +58,6 @@ export class RedisService {
     return await this.get<string>(`${USER_VERSION_KEY}:${userId}`);
   }
 
-  // 退出登录时移除用户缓存数据
-  async delUserCache(userId: number) {
-    await this.redis.del(`${USER_TOKEN_KEY}:${userId}`);
-    await this.redis.del(`${USER_INFO_KEY}:${userId}`);
-    await this.redis.del(`${USER_VERSION_KEY}:${userId}`);
-  }
-
   /* 获取redis信息 */
   async getRedisInfo() {
     const info = await this.redis.info();

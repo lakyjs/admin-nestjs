@@ -11,7 +11,8 @@
     "username_cannot_be_empty": "用户名不能为空",
     "password_cannot_be_empty": "密码不能为空",
     "user_not_exist": "用户不存在",
-    "username_or_password_incorrect": "账号或密码错误"
+    "username_or_password_incorrect": "账号或密码错误",
+    "login_other_device": "当前账号已在其他设备登录，如有需要请重新登录"
   },
   "role": {
     "role_name_exist": "角色名已存在",

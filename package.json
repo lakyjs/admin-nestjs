@@ -47,6 +47,7 @@
     "dayjs": "^1.11.13",
     "express": "^4.21.1",
     "ioredis": "^5.4.1",
+    "ip-address": "^10.0.1",
     "nestjs-i18n": "^10.5.0",
     "nestjs-pino": "^4.1.0",
     "node-xlsx": "^0.24.0",
